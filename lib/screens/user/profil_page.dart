@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-//import 'package:utama/screens/user/riwayat_page.dart';
-//import '../user/user_home_page.dart' as home;
+import 'riwayat_page.dart';
+import 'user_home_page.dart' as home;
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -26,16 +26,16 @@ class _ProfilPageState extends State<ProfilPage> {
 
     switch (index) {
       case 0:
-        //Navigator.pushReplacement(
-          //context,
-          //MaterialPageRoute(builder: (_) => home.UserHomePage()),
-        //);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => home.UserHomePage()),
+        );
         break;
       case 1:
-        //Navigator.pushReplacement(
-          //context,
-          //MaterialPageRoute(builder: (_) => RiwayatPage()),
-        //);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => RiwayatPage()),
+        );
         break;
       case 2:
         break;
@@ -165,5 +165,3 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 }
-
-

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:museumgo/screens/user/user_home_page.dart';
+import 'registrasi_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -87,15 +89,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
               SizedBox(height: 24),
 
-              //ElevatedButton(
-                //onPressed: () {
-                  //Navigator.push(
-                    //context,
-                    //MaterialPageRoute(builder: (context) => UserHomePage()),
-                  //);
-                //},
-                //child: Text("Login"),
-              //),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UserHomePage()),
+                  );
+                },
+                child: Text("Login"),
+              ),
 
               // Tombol Login
               //ElevatedButton(
@@ -114,12 +116,12 @@ class _LoginPageState extends State<LoginPage> {
                   Text("Belum punya akun? "),
                   GestureDetector(
                     onTap: () {
-                      //Navigator.push(
-                        //context,
-                        //MaterialPageRoute(
-                          //builder: (context) => RegistrasiPage(),
-                        //),
-                      //);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RegistrasiPage(),
+                        ),
+                      );
                     },
                     child: Text(
                       "Daftar sekarang",

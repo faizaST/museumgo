@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-//import 'package:utama/screens/admin/laporan_page.dart';
-//import 'package:utama/screens/admin/pemesanan_full_page.dart';
-//import 'package:utama/screens/admin/pemesanan_page.dart';
-//import 'package:utama/screens/admin/pengguna_page.dart';
-//import 'admin_profil_page.dart';
+import 'laporan_page.dart';
+import 'pemesanan_page.dart';
+import 'pengguna_page.dart';
+import 'admin_profil_page.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -16,11 +15,11 @@ class AdminHomePage extends StatefulWidget {
 class _AdminHomePageState extends State<AdminHomePage> {
   int _selectedIndex = 0;
 
-  //final List<Widget> _pages = const [
-  //_DashboardPage(),
-  //PemesananFullPage(),
-  //AdminProfilPage(),
-  //];
+  final List<Widget> _pages = const [
+    _DashboardPage(),
+    PemesananPage(),
+    AdminProfilPage(),
+  ];
 
   final List<String> _titles = const [
     'Dashboard Admin',
@@ -45,7 +44,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
-      //body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
@@ -137,24 +136,24 @@ class _DashboardPage extends StatelessWidget {
               runSpacing: 16,
               alignment: WrapAlignment.center,
               children: [
-                //_MenuItem(
-                //icon: Icons.people,
-                //label: 'Pengguna',
-                //color: Colors.blue,
-                //page: PenggunaPage(),
-                //),
-                //_MenuItem(
-                //icon: Icons.receipt_long,
-                //label: 'Pemesanan',
-                //color: Colors.green,
-                //page: PemesananPage(),
-                //),
-                //_MenuItem(
-                //icon: Icons.bar_chart,
-                //label: 'Laporan',
-                //color: Colors.deepPurple,
-                //page: LaporanPage(),
-                //),
+                _MenuItem(
+                  icon: Icons.people,
+                  label: 'Pengguna',
+                  color: Colors.blue,
+                  page: PenggunaPage(),
+                ),
+                _MenuItem(
+                  icon: Icons.receipt_long,
+                  label: 'Pemesanan',
+                  color: Colors.green,
+                  page: PemesananPage(),
+                ),
+                _MenuItem(
+                  icon: Icons.bar_chart,
+                  label: 'Laporan',
+                  color: Colors.deepPurple,
+                  page: LaporanPage(),
+                ),
               ],
             ),
           ),

@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:museumgo/screens/auth/login_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:museumgo/screens/auth/registrasi_page.dart';
+import 'package:museumgo/screens/admin/admin_home_page.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await GetStorage.init();
-  await Supabase.initialize(
-    url: 'https://your-project.supabase.co',
-    anonKey: 'your-anon-key',
-  );
-  runApp(MyApp());
+  WidgetsFlutterBinding.ensureInitialized(); // Wajib sebelum async init
+  await initializeDateFormatting('id_ID', null); // Inisialisasi lokal Indonesia
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -24,7 +22,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: LoginPage(),
+      routes: {
+        '/screens/auth/login_screen': (context) => LoginPage(),
+        '/screens/auth/registrasi_screen': (context) => RegistrasiPage(),
+        // Tambahkan rute lainnya sesuai kebutuhan
+      },
+      home: AdminHomePage(),
     );
   }
 }

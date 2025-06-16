@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:utama/screens/user/pesan_page.dart';
-//import 'riwayat_page.dart' as riwayat;
-//import 'profil_page.dart';
+import 'pesan_page.dart';
+import 'riwayat_page.dart' as riwayat;
+import 'profil_page.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -28,15 +28,15 @@ class _UserHomePageState extends State<UserHomePage> {
         _selectedIndex = 0;
       });
     } else if (index == 1) {
-      //Navigator.push(
-        //context,
-        //MaterialPageRoute(builder: (context) => riwayat.RiwayatPage()),
-      //);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => riwayat.RiwayatPage()),
+      );
     } else if (index == 2) {
-      //Navigator.push(
-        //context,
-        //MaterialPageRoute(builder: (context) => ProfilPage()),
-      //);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ProfilPage()),
+      );
     }
   }
 
@@ -161,10 +161,10 @@ class _UserHomePageState extends State<UserHomePage> {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    //Navigator.push(
-                      //context,
-                      //MaterialPageRoute(builder: (context) => PesanPage()),
-                    //);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PesanPage()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
@@ -199,4 +199,3 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 }
-

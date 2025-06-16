@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-//import 'pemesanan_page.dart';
-//import 'package:utama/screens/user/profil_page.dart';
+import 'pemesanan_page.dart';
+import 'admin_profil_page.dart';
 import 'admin_home_page.dart';
 
 class PenggunaPage extends StatefulWidget {
@@ -27,16 +27,16 @@ class _PenggunaPageState extends State<PenggunaPage> {
         );
         break;
       case 1:
-        //Navigator.push(
-        //context,
-        //MaterialPageRoute(builder: (context) => const PemesananPage()),
-        //);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PemesananPage()),
+        );
         break;
       case 2:
-        //Navigator.push(
-        //context,
-        //MaterialPageRoute(builder: (context) => const ProfilPage()),
-        //);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminProfilPage()),
+        );
         break;
     }
   }

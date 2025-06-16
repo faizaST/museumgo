@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-//import 'package:utama/screens/admin/admin_home_page.dart';
-//import 'package:utama/screens/admin/pemesanan_page.dart';
+import 'admin_home_page.dart';
+import 'pemesanan_page.dart';
 import 'admin_profil_body_page.dart';
 
 class AdminProfilFullPage extends StatefulWidget {
@@ -26,10 +26,10 @@ class _AdminProfilFullPageState extends State<AdminProfilFullPage> {
     Widget destination;
     switch (index) {
       case 0:
-        //destination = const AdminHomePage();
+        destination = const AdminHomePage();
         break;
       case 1:
-        //destination = const PemesananPage();
+        destination = const PemesananPage();
         break;
       case 2:
         return;
@@ -37,10 +37,10 @@ class _AdminProfilFullPageState extends State<AdminProfilFullPage> {
         return;
     }
 
-    //Navigator.pushReplacement(
-      //context,
-      //MaterialPageRoute(builder: (_) => destination),
-    //);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+    );
   }
 
   void _logout() {
