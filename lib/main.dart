@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
         '/screens/auth/registrasi_screen': (context) => RegistrasiPage(),
         // Tambahkan rute lainnya sesuai kebutuhan
       },
-      home: AdminHomePage(),
+      home: LoginPage(),
     );
   }
 }

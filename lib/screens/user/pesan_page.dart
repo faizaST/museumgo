@@ -16,21 +16,7 @@ class _PesanPageState extends State<PesanPage> {
     text: '1',
   );
 
-  int _selectedIndex = 0;
-
-  void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 0) {
-      Navigator.pushNamed(context, '/user_home');
-    } else if (index == 1) {
-      Navigator.pushNamed(context, '/riwayat');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/profil');
-    }
-  }
+  int _selectedIndex = 0; // Beranda
 
   void _pilihTanggal() async {
     final DateTime? picked = await showDatePicker(
@@ -42,7 +28,6 @@ class _PesanPageState extends State<PesanPage> {
     if (picked != null) {
       setState(() {
         _tanggalKunjungan = picked;
-        // Format manual yyyy-MM-dd
         _tanggalController.text =
             "${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
@@ -51,15 +36,15 @@ class _PesanPageState extends State<PesanPage> {
 
   void _submitPesanan() {
     if (_namaController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Silakan isi nama pengunjung')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan isi nama pengunjung')),
+      );
       return;
     }
 
     if (_tanggalKunjungan == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Silakan pilih tanggal kunjungan')),
+        const SnackBar(content: Text('Silakan pilih tanggal kunjungan')),
       );
       return;
     }
@@ -79,6 +64,14 @@ class _PesanPageState extends State<PesanPage> {
     );
   }
 
+  void _onNavTapped(int index) {
+    if (_selectedIndex == index) return;
+
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   void dispose() {
     _namaController.dispose();
@@ -90,61 +83,51 @@ class _PesanPageState extends State<PesanPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Pesan Tiket')),
+      appBar: AppBar(title: const Text('Pesan Tiket'), centerTitle: true),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: _namaController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Nama Pengunjung',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: _tanggalController,
               readOnly: true,
               onTap: _pilihTanggal,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Tanggal Kunjungan',
                 border: OutlineInputBorder(),
                 suffixIcon: Icon(Icons.calendar_today),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: _jumlahTiketController,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Jumlah Tiket',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _submitPesanan,
               style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 14,
+                ),
               ),
-              child: Text('Pesan Tiket'),
+              child: const Text('Pesan Tiket'),
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTapped,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
       ),
     );
   }

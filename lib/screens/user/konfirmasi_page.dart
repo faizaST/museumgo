@@ -25,14 +25,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
     setState(() {
       _selectedIndex = index;
     });
-
-    if (index == 0) {
-      Navigator.pushNamed(context, '/user_home');
-    } else if (index == 1) {
-      Navigator.pushNamed(context, '/riwayat');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/profil');
-    }
   }
 
   void _uploadBukti() {
@@ -212,18 +204,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTapped,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
     );
   }
 
@@ -261,5 +241,3 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
     );
   }
 }
-
-

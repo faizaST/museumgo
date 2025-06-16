@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'profil_page.dart';
+import 'user_home_page.dart' as home;
 
 class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
@@ -40,18 +41,18 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     switch (index) {
       case 0:
-        //Navigator.pushReplacement(
-          //context,
-          //MaterialPageRoute(builder: (_) => home.UserHomePage()),
-        //);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => home.UserHomePage()),
+        );
         break;
       case 1:
         break;
       case 2:
-        //Navigator.pushReplacement(
-          //context,
-          //MaterialPageRoute(builder: (_) => ProfilPage()),
-        //);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ProfilPage()),
+        );
         break;
     }
   }
@@ -85,22 +86,21 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 ),
                 SizedBox(height: 12),
                 InkWell(
-  onTap: () async {
-    final url = data['buktiPembayaranUrl'] ?? '';
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal membuka file.')),
-      );
-    }
-  },
-  child: Text(
-    'Lihat Bukti Pembayaran',
-    style: TextStyle(color: Colors.blue),
-  ),
-)
-
+                  onTap: () async {
+                    final url = data['buktiPembayaranUrl'] ?? '';
+                    if (await canLaunch(url)) {
+                      await launch(url);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal membuka file.')),
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Lihat Bukti Pembayaran',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
               ],
             ),
             actions: [
@@ -181,5 +181,3 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 }
-
-
