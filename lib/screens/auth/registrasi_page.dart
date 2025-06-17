@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 
 class RegistrasiPage extends StatefulWidget {
@@ -19,15 +20,40 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // Proses registrasi di sini, misal kirim ke backend atau Firebase
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Registrasi berhasil!')));
-      // Contoh pindah ke login setelah registrasi
-      Navigator.pop(context);
+
+      try {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email!,
+          password: password!,
+          data: {'name': name},
+        );
+
+        // Jika berhasil daftar akun
+        if (response.user != null) {
+          // Simpan juga ke tabel users (custom)
+          await Supabase.instance.client.auth.signUp(
+            email: email!,
+            password: password!,
+            data: {'name': name}, // <-- wajib, karena trigger pakai ini
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
+          );
+          Navigator.pop(context); // Kembali ke halaman login
+        }
+      } on AuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal registrasi: ${e.message}')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan.')));
+      }
     }
   }
 
@@ -68,7 +94,7 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                     return 'Email wajib diisi';
                   }
                   final emailRegex = RegExp(
-                    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
                   );
                   if (!emailRegex.hasMatch(value)) {
                     return 'Email tidak valid';
@@ -107,7 +133,7 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                   }
                   return null;
                 },
-                onSaved: (value) => password = value,
+                onChanged: (value) => password = value,
               ),
               SizedBox(height: 16),
 
@@ -139,28 +165,17 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                   }
                   return null;
                 },
-                onSaved: (value) => confirmPassword = value,
               ),
               SizedBox(height: 24),
 
-              //ElevatedButton(
-                //onPressed: () {
-                  //Navigator.push(
-                    //context,
-                    //MaterialPageRoute(builder: (context) => UserHomePage()),
-                  //);
-                //},
-                //child: Text("Daftar", style: TextStyle(fontSize: 18)),
-              //),
-
               // Tombol Daftar
-              //ElevatedButton(
-              //onPressed: _submit,
-              //child: Padding(
-              //padding: EdgeInsets.symmetric(vertical: 14),
-              //child: Text('Daftar', style: TextStyle(fontSize: 18)),
-              //),
-              //),
+              ElevatedButton(
+                onPressed: _submit,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Text('Daftar', style: TextStyle(fontSize: 18)),
+                ),
+              ),
               SizedBox(height: 16),
 
               // Link ke login

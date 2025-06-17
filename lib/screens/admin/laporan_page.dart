@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
-import 'pemesanan_page.dart';
-import 'admin_profil_page.dart';
-import 'admin_home_page.dart';
 
 class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
@@ -13,7 +10,6 @@ class LaporanPage extends StatefulWidget {
 }
 
 class _LaporanPageState extends State<LaporanPage> {
-  int _selectedIndex = 0;
   DateTime selectedDate = DateTime.now();
 
   final int totalPengunjung = 125;
@@ -25,33 +21,6 @@ class _LaporanPageState extends State<LaporanPage> {
     {'nama': 'Budi', 'tanggal': '2025-06-03', 'jumlah': 4, 'total': 100000},
     {'nama': 'Sari', 'tanggal': '2025-06-05', 'jumlah': 1, 'total': 25000},
   ];
-
-  void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminHomePage()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const PemesananPage()),
-        );
-        break;
-      case 2:
-        //.pushReplacement(
-        //context,
-        //MaterialPageRoute(builder: (context) => const AdminProfilPage()),
-        //);
-        break;
-    }
-  }
 
   Future<void> _selectMonth(BuildContext context) async {
     final DateTime? picked = await showMonthPicker(
@@ -83,7 +52,12 @@ class _LaporanPageState extends State<LaporanPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -188,23 +162,6 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTapped,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.grey[300],
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt),
-            label: 'Pemesanan',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
       ),
     );
   }

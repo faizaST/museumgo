@@ -143,12 +143,6 @@ class _DashboardPage extends StatelessWidget {
                   page: PenggunaPage(),
                 ),
                 _MenuItem(
-                  icon: Icons.receipt_long,
-                  label: 'Pemesanan',
-                  color: Colors.green,
-                  page: PemesananPage(),
-                ),
-                _MenuItem(
                   icon: Icons.bar_chart,
                   label: 'Laporan',
                   color: Colors.deepPurple,

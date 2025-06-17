@@ -3,6 +3,7 @@ import 'package:museumgo/screens/auth/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:museumgo/screens/auth/registrasi_page.dart';
 import 'package:museumgo/screens/admin/admin_home_page.dart';
+import 'package:museumgo/screens/admin/pemesanan_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Wajib sebelum async init
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
         '/screens/auth/registrasi_screen': (context) => RegistrasiPage(),
         // Tambahkan rute lainnya sesuai kebutuhan
       },
-      home: LoginPage(),
+      home: AdminHomePage(),
     );
   }
 }

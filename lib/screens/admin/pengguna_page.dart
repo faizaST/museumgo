@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'pemesanan_page.dart';
-import 'admin_profil_page.dart';
-import 'admin_home_page.dart';
 
 class PenggunaPage extends StatefulWidget {
   const PenggunaPage({super.key});
@@ -11,36 +8,6 @@ class PenggunaPage extends StatefulWidget {
 }
 
 class _PenggunaPageState extends State<PenggunaPage> {
-  int _selectedIndex = 0;
-
-  void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    // Navigasi berdasarkan index menggunakan push
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminHomePage()),
-        );
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const PemesananPage()),
-        );
-        break;
-      case 2:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminProfilPage()),
-        );
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> penggunaList = [
@@ -56,7 +23,12 @@ class _PenggunaPageState extends State<PenggunaPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -128,23 +100,6 @@ class _PenggunaPageState extends State<PenggunaPage> {
             ),
           );
         },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTapped,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.grey[300],
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt),
-            label: 'Data Pemesanan',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
       ),
     );
   }
