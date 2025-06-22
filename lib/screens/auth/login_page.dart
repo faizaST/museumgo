@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../user/user_home_page.dart';
+import '../../services/auth_service.dart';
 import '../admin/admin_home_page.dart';
+import '../user/user_home_page.dart';
 import 'registrasi_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -16,7 +16,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final box = GetStorage();
+  final _authService = AuthService();
+  final _box = GetStorage();
 
   bool _obscurePassword = true;
   String? email;
@@ -26,57 +27,34 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submitLogin() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-
       setState(() => isLoading = true);
 
       try {
-        // Login ke Supabase
-        final response = await Supabase.instance.client.auth.signInWithPassword(
+        final userModel = await _authService.loginUser(
           email: email!,
           password: password!,
         );
 
-        final user = response.user;
-        if (user != null) {
-          // Ambil role dari user metadata (pastikan kamu menyimpan role saat registrasi)
-          final userData =
-              await Supabase.instance.client
-                  .from('users')
-                  .select('role')
-                  .eq('id', user.id)
-                  .single();
+        // Simpan session
+        _box.write('user_id', userModel.userId);
+        _box.write('role', userModel.role);
 
-          final role = userData['role'] ?? 'user'; // default: user
-
-          // Simpan session di local
-          box.write('user_id', user.id);
-          box.write('role', role);
-
-          Get.snackbar(
-            "Login Berhasil",
-            "Selamat datang!",
-            snackPosition: SnackPosition.BOTTOM,
-          );
-
-          // Navigasi sesuai role
-          if (role == 'admin') {
-            Get.offAll(() => AdminHomePage());
-          } else {
-            Get.offAll(() => UserHomePage());
-          }
-        }
-      } on AuthException catch (e) {
         Get.snackbar(
-          "Login Gagal",
-          e.message,
+          "Login Berhasil",
+          "Selamat datang ${userModel.name}!",
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
+
+        // Navigasi sesuai role
+        if (userModel.role == 'admin') {
+          Get.offAll(() => const AdminHomePage());
+        } else {
+          Get.offAll(() => const UserHomePage());
+        }
       } catch (e) {
         Get.snackbar(
-          "Error",
-          "Terjadi kesalahan saat login.",
+          "Login Gagal",
+          e.toString(),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -104,31 +82,20 @@ class _LoginPageState extends State<LoginPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-
-              // Email
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email wajib diisi';
-                  }
-                  final emailRegex = RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  );
-                  if (!emailRegex.hasMatch(value)) {
-                    return 'Format email tidak valid';
-                  }
-                  return null;
-                },
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty
+                            ? 'Email wajib diisi'
+                            : null,
                 onSaved: (value) => email = value,
               ),
               const SizedBox(height: 16),
-
-              // Password
               TextFormField(
                 decoration: InputDecoration(
                   labelText: 'Password',
@@ -139,22 +106,21 @@ class _LoginPageState extends State<LoginPage> {
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                   ),
                 ),
                 obscureText: _obscurePassword,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password wajib diisi';
-                  }
-                  return null;
-                },
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty
+                            ? 'Password wajib diisi'
+                            : null,
                 onSaved: (value) => password = value,
               ),
               const SizedBox(height: 24),
-
               ElevatedButton(
                 onPressed: isLoading ? null : _submitLogin,
                 child:
@@ -163,7 +129,6 @@ class _LoginPageState extends State<LoginPage> {
                         : const Text("Login"),
               ),
               const SizedBox(height: 16),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

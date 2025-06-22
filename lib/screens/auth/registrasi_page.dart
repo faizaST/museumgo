@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:get/get.dart';
+
+import '../../services/auth_service.dart';
 import 'login_page.dart';
 
 class RegistrasiPage extends StatefulWidget {
@@ -11,6 +13,7 @@ class RegistrasiPage extends StatefulWidget {
 
 class _RegistrasiPageState extends State<RegistrasiPage> {
   final _formKey = GlobalKey<FormState>();
+  final _authService = AuthService();
 
   String? name;
   String? email;
@@ -25,34 +28,27 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
       _formKey.currentState!.save();
 
       try {
-        final response = await Supabase.instance.client.auth.signUp(
+        await _authService.registerUser(
+          name: name!,
           email: email!,
           password: password!,
-          data: {'name': name},
         );
 
-        // Jika berhasil daftar akun
-        if (response.user != null) {
-          // Simpan juga ke tabel users (custom)
-          await Supabase.instance.client.auth.signUp(
-            email: email!,
-            password: password!,
-            data: {'name': name}, // <-- wajib, karena trigger pakai ini
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
-          );
-          Navigator.pop(context); // Kembali ke halaman login
-        }
-      } on AuthException catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal registrasi: ${e.message}')),
+        Get.snackbar(
+          "Registrasi Berhasil",
+          "Silakan login terlebih dahulu",
+          snackPosition: SnackPosition.BOTTOM,
         );
+
+        Get.off(() => const LoginPage());
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan.')));
+        Get.snackbar(
+          "Error",
+          e.toString(),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
     }
   }
@@ -60,16 +56,15 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Registrasi'), centerTitle: true),
+      appBar: AppBar(title: const Text('Registrasi'), centerTitle: true),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              // Nama
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Nama Lengkap',
                   border: OutlineInputBorder(),
                 ),
@@ -80,47 +75,35 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                             : null,
                 onSaved: (value) => name = value,
               ),
-              SizedBox(height: 16),
-
-              // Email
+              const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email wajib diisi';
-                  }
-                  final emailRegex = RegExp(
-                    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
-                  );
-                  if (!emailRegex.hasMatch(value)) {
-                    return 'Email tidak valid';
-                  }
-                  return null;
-                },
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty
+                            ? 'Email wajib diisi'
+                            : null,
                 onSaved: (value) => email = value,
               ),
-              SizedBox(height: 16),
-
-              // Password
+              const SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                   ),
                 ),
                 obscureText: _obscurePassword,
@@ -135,24 +118,23 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                 },
                 onChanged: (value) => password = value,
               ),
-              SizedBox(height: 16),
-
-              // Konfirmasi Password
+              const SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
                   labelText: 'Konfirmasi Password',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
+                    onPressed:
+                        () => setState(
+                          () =>
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                        ),
                   ),
                 ),
                 obscureText: _obscureConfirmPassword,
@@ -166,31 +148,22 @@ class _RegistrasiPageState extends State<RegistrasiPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 24),
-
-              // Tombol Daftar
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _submit,
-                child: Padding(
+                child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
                   child: Text('Daftar', style: TextStyle(fontSize: 18)),
                 ),
               ),
-              SizedBox(height: 16),
-
-              // Link ke login
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Sudah punya akun? '),
+                  const Text('Sudah punya akun? '),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
-                    },
-                    child: Text(
+                    onTap: () => Get.off(() => const LoginPage()),
+                    child: const Text(
                       'Login',
                       style: TextStyle(
                         color: Colors.blue,
