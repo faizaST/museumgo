@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'riwayat_page.dart';
-import 'user_home_page.dart' as home;
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -10,62 +15,103 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
-  int _selectedIndex = 2;
+  final _box = GetStorage();
+  final AuthService _authService = AuthService();
 
-  final TextEditingController _namaController = TextEditingController(
-    text: 'Faiza Tiaramadhan',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'faiza@example.com',
-  );
+  final _nameController = TextEditingController();
+  UserModel? _user;
+  bool _isLoading = true;
 
-  void _onNavTapped(int index) {
-    if (index == _selectedIndex) return;
+  File? _selectedImage;
 
-    setState(() => _selectedIndex = index);
+  int _selectedIndex = 2; // index ke-2 untuk Profil
 
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => home.UserHomePage()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => RiwayatPage()),
-        );
-        break;
-      case 2:
-        break;
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userData = await _authService.getCurrentUserProfile();
+      setState(() {
+        _user = userData;
+        _nameController.text = userData?.name ?? '';
+        _isLoading = false;
+      });
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal memuat profil: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _selectedImage = File(picked.path);
+      });
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    if (_user == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('users')
+          .update({'name': _nameController.text})
+          .eq('user_id', _user!.userId);
+
+      Get.snackbar(
+        'Berhasil',
+        'Profil diperbarui',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      _loadUserData();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal memperbarui: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
   void _logout() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Konfirmasi'),
-            content: const Text('Apakah kamu yakin ingin logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Berhasil logout')),
-                  );
-                },
-                child: const Text('Ya'),
-              ),
-            ],
-          ),
+    Get.defaultDialog(
+      title: 'Konfirmasi',
+      middleText: 'Apakah kamu yakin ingin logout?',
+      textCancel: 'Batal',
+      textConfirm: 'Ya',
+      confirmTextColor: Colors.white,
+      onConfirm: () async {
+        await _authService.logout();
+        _box.erase();
+        Get.offAllNamed('/login');
+        Get.snackbar(
+          'Logout',
+          'Berhasil logout',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
     );
+  }
+
+  void _onNavTapped(int index) {
+    setState(() => _selectedIndex = index);
+    if (index == 0) Get.offAllNamed('/user_home');
+    if (index == 1) Get.offAllNamed('/riwayat');
+    if (index == 2) Get.offAllNamed('/profil');
   }
 
   @override
@@ -79,83 +125,95 @@ class _ProfilPageState extends State<ProfilPage> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          children: [
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage('assets/avatar.png'),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Fitur ubah foto belum tersedia"),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundImage:
+                            _selectedImage != null
+                                ? FileImage(_selectedImage!)
+                                : const AssetImage('assets/avatar.png')
+                                    as ImageProvider,
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: CircleAvatar(
+                            backgroundColor: Colors.white,
+                            radius: 14,
+                            child: const Icon(
+                              Icons.edit,
+                              size: 16,
+                              color: Colors.black,
+                            ),
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      readOnly: true,
+                      controller: TextEditingController(
+                        text: _user?.email ?? '',
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveChanges,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Simpan Perubahan'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _logout,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.black),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'Log Out',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _namaController,
-              decoration: const InputDecoration(
-                labelText: 'Nama',
-                border: OutlineInputBorder(),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _logout,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.black),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'Log Out',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
