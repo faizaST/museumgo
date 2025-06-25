@@ -1,4 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class KonfirmasiPage extends StatefulWidget {
   final String namaPengunjung;
@@ -18,38 +23,128 @@ class KonfirmasiPage extends StatefulWidget {
 
 class _KonfirmasiPageState extends State<KonfirmasiPage> {
   static const int hargaTiketPerOrang = 50000;
-  bool _isFileUploaded = false;
-  int _selectedIndex = 0;
+  final _box = GetStorage();
+  bool _isUploading = false;
+  String? _uploadedImageUrl;
+  XFile? _imageFile;
 
-  void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  Future<void> _pickImageAndUpload() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() => _isUploading = true);
+
+      try {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}';
+        final fileBytes = await pickedFile.readAsBytes();
+
+        // Upload ke Supabase Storage
+        await Supabase.instance.client.storage
+            .from('bukti-pembayaran')
+            .uploadBinary('bukti_url/$fileName', fileBytes);
+
+        final publicUrl = Supabase.instance.client.storage
+            .from('bukti-pembayaran')
+            .getPublicUrl('bukti_url/$fileName');
+
+        setState(() {
+          _imageFile = pickedFile;
+          _uploadedImageUrl = publicUrl;
+        });
+
+        print('✅ Upload berhasil. Public URL: $_uploadedImageUrl');
+
+        Get.snackbar(
+          'Upload Berhasil',
+          'Bukti pembayaran berhasil diunggah',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } catch (e) {
+        print('❌ Upload error: $e');
+        Get.snackbar(
+          'Upload Gagal',
+          'Terjadi kesalahan: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      } finally {
+        setState(() => _isUploading = false);
+      }
+    }
   }
 
-  void _uploadBukti() {
-    setState(() {
-      _isFileUploaded = true;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Simulasi bukti pembayaran diupload')),
-    );
-  }
-
-  void _submit() {
-    if (!_isFileUploaded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan unggah bukti pembayaran')),
+  Future<void> _submit() async {
+    if (_uploadedImageUrl == null) {
+      Get.snackbar(
+        'Error',
+        'Silakan unggah bukti pembayaran',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
       );
       return;
     }
 
-    Navigator.popUntil(context, (route) => route.isFirst);
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      Get.snackbar(
+        'Error',
+        'User tidak ditemukan. Silakan login ulang.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pesanan berhasil dikonfirmasi!')),
-    );
+    final userId = user.id;
+    final totalBayar = widget.jumlahTiket * hargaTiketPerOrang;
+
+    final pemesananData = {
+      'user_id': userId,
+      'nama': widget.namaPengunjung,
+      'tanggal': widget.tanggalKunjungan.toIso8601String().substring(0, 10),
+      'jumlah': widget.jumlahTiket,
+      'total': totalBayar,
+      'bukti_url': _uploadedImageUrl,
+    };
+
+    try {
+      final response =
+          await Supabase.instance.client
+              .from('pemesanan')
+              .insert(pemesananData)
+              .select()
+              .single();
+
+      print('✅ Insert response: $response');
+
+      _box.write('last_konfirmasi', response);
+
+      Get.offAllNamed('/riwayat');
+
+      Get.snackbar(
+        'Sukses',
+        'Pesanan berhasil dikonfirmasi!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      print('❌ Insert error: $e');
+      Get.snackbar(
+        'Gagal',
+        'Terjadi kesalahan saat menyimpan: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
@@ -59,7 +154,7 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Konfirmasi Pesanan'),
+        title: const Text('Pesan Tiket'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -70,105 +165,71 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoCard(
-              icon: Icons.person,
+            _buildInfoBox(
               label: 'Nama Pengunjung',
               value: widget.namaPengunjung,
             ),
-            _buildInfoCard(
-              icon: Icons.calendar_today,
+            _buildInfoBox(
               label: 'Tanggal Kunjungan',
-              value:
-                  widget.tanggalKunjungan
-                      .toLocal()
-                      .toIso8601String()
-                      .split("T")
-                      .first,
+              value: widget.tanggalKunjungan.toIso8601String().substring(0, 10),
             ),
-            _buildInfoCard(
-              icon: Icons.confirmation_number,
+            _buildInfoBox(
               label: 'Jumlah Tiket',
-              value: '${widget.jumlahTiket} Tiket',
+              value: '${widget.jumlahTiket}',
             ),
-            const SizedBox(height: 10),
-
-            // Ganti bagian Total Bayar dengan container border hitam:
-            Center(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Total Bayar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      'Rp ${totalBayar.toString()}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-
-            // Bagian rekening bank tanpa container border:
-            Center(
               child: Column(
-                children: const [
-                  Text(
-                    'Transfer ke Rekening',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
+                children: [
+                  const Text(
+                    'Total yang harus dibayar:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    'Bank BCA',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'No. Rekening: 1234-5678-9012',
-                    style: TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Atas Nama: MuseumGo',
-                    style: TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
+                    'Rp $totalBayar',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            Center(
+              child: Column(
+                children: const [
+                  Text(
+                    'Silakan transfer ke:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 4),
+                  Text('BCA - 1234567890 a.n. MuseumGo'),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
-
             const Text(
               'Unggah Bukti Pembayaran',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _uploadBukti,
+              onPressed: _isUploading ? null : _pickImageAndUpload,
               icon: const Icon(Icons.upload_file, color: Colors.black),
               label: Text(
-                _isFileUploaded
-                    ? 'Bukti sudah diupload'
-                    : 'Unggah Bukti Pembayaran',
+                _isUploading
+                    ? 'Mengunggah...'
+                    : (_uploadedImageUrl != null
+                        ? 'Bukti sudah diupload'
+                        : 'Unggah Bukti Pembayaran'),
                 style: const TextStyle(color: Colors.black),
               ),
               style: OutlinedButton.styleFrom(
@@ -179,10 +240,9 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
               ),
             ),
             const SizedBox(height: 32),
-
             Center(
               child: ElevatedButton(
-                onPressed: _submit,
+                onPressed: _isUploading ? null : _submit,
                 child: const Text(
                   'Konfirmasi Pesanan',
                   style: TextStyle(
@@ -198,6 +258,9 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
                     vertical: 16,
                   ),
                   elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
               ),
             ),
@@ -207,35 +270,20 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
     );
   }
 
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget _buildInfoBox({required String label, required String value}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: Colors.black),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontSize: 16)),
-              ],
-            ),
-          ),
+          Text(label),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
