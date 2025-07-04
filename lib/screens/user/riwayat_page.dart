@@ -44,18 +44,17 @@ class _RiwayatPageState extends State<RiwayatPage> {
       final data = await _service.ambilPemesananUser(user.id);
       setState(() {
         _riwayat =
-            data
-                .map(
-                  (e) => Tiket(
-                    userId: e['user_id'],
-                    nama: e['nama'],
-                    tanggal: e['tanggal'],
-                    jumlah: e['jumlah'],
-                    total: e['total'],
-                    buktiUrl: e['bukti_url'],
-                  ),
-                )
-                .toList();
+            data.map((e) {
+              return Tiket(
+                userId: e['user_id'],
+                nama: e['nama'],
+                tanggal: e['tanggal'],
+                jumlah: e['jumlah'],
+                total: e['total'],
+                buktiUrl: e['bukti_url'],
+                status: e['status'] ?? 'Menunggu Konfirmasi',
+              );
+            }).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -109,6 +108,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                 Text('Nama: ${tiket.nama}'),
                 Text('Tanggal Kunjungan: ${tiket.tanggal}'),
                 Text('Jumlah Tiket: ${tiket.jumlah}'),
+                Text('Status: ${tiket.status}'),
                 Text(
                   'Total: Rp ${tiket.total}',
                   style: const TextStyle(fontWeight: FontWeight.w500),
@@ -160,6 +160,18 @@ class _RiwayatPageState extends State<RiwayatPage> {
   }
 
   Widget buildRiwayatCard(Tiket tiket) {
+    Color statusColor;
+    switch (tiket.status) {
+      case 'Terverifikasi':
+        statusColor = Colors.green;
+        break;
+      case 'Ditolak':
+        statusColor = Colors.red;
+        break;
+      default:
+        statusColor = Colors.orange;
+    }
+
     return GestureDetector(
       onTap: () => _showDetailPopup(tiket),
       child: Container(
@@ -185,6 +197,13 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   const SizedBox(height: 4),
                   Text('Tanggal: ${tiket.tanggal}'),
                   Text('Jumlah Tiket: ${tiket.jumlah}'),
+                  Text(
+                    'Status: ${tiket.status}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -210,9 +229,20 @@ class _RiwayatPageState extends State<RiwayatPage> {
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _riwayat.isEmpty
-              ? const Center(child: Text('Belum ada riwayat pemesanan.'))
-              : ListView(children: _riwayat.map(buildRiwayatCard).toList()),
+              : RefreshIndicator(
+                onRefresh: _loadRiwayat,
+                child:
+                    _riwayat.isEmpty
+                        ? ListView(
+                          children: [
+                            SizedBox(height: 300),
+                            Center(child: Text('Belum ada riwayat pemesanan.')),
+                          ],
+                        )
+                        : ListView(
+                          children: _riwayat.map(buildRiwayatCard).toList(),
+                        ),
+              ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,

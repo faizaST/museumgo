@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+import '../../models/pesan_model.dart';
+import '../../services/pesan_service.dart';
 
 class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
@@ -10,20 +15,53 @@ class LaporanPage extends StatefulWidget {
 }
 
 class _LaporanPageState extends State<LaporanPage> {
+  final _service = PemesananService();
   DateTime selectedDate = DateTime.now();
 
-  final int totalPengunjung = 125;
-  final int totalTiket = 98;
-  final int totalPendapatan = 1500000;
+  List<Tiket> laporan = [];
+  bool isLoading = true;
 
-  final List<Map<String, dynamic>> laporanDetail = [
-    {'nama': 'Andi', 'tanggal': '2025-06-01', 'jumlah': 2, 'total': 50000},
-    {'nama': 'Budi', 'tanggal': '2025-06-03', 'jumlah': 4, 'total': 100000},
-    {'nama': 'Sari', 'tanggal': '2025-06-05', 'jumlah': 1, 'total': 25000},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadLaporan();
+  }
+
+  Future<void> _loadLaporan() async {
+    setState(() => isLoading = true);
+
+    final awal = DateTime(selectedDate.year, selectedDate.month, 1);
+    final akhir = DateTime(selectedDate.year, selectedDate.month + 1, 0);
+
+    try {
+      final response = await _service.client
+          .from('pemesanan')
+          .select()
+          .eq('status', 'Dikonfirmasi')
+          .gte('tanggal', awal.toIso8601String())
+          .lte('tanggal', akhir.toIso8601String());
+
+      laporan =
+          List<Map<String, dynamic>>.from(response).map((e) {
+            return Tiket(
+              userId: e['user_id'],
+              nama: e['nama'],
+              tanggal: e['tanggal'],
+              jumlah: e['jumlah'],
+              total: e['total'],
+              buktiUrl: e['bukti_url'] ?? '',
+              status: e['status'] ?? 'Menunggu',
+            );
+          }).toList();
+    } catch (e) {
+      print('❌ Gagal memuat laporan: $e');
+    }
+
+    setState(() => isLoading = false);
+  }
 
   Future<void> _selectMonth(BuildContext context) async {
-    final DateTime? picked = await showMonthPicker(
+    final picked = await showMonthPicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2020),
@@ -31,14 +69,17 @@ class _LaporanPageState extends State<LaporanPage> {
     );
 
     if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
+      setState(() => selectedDate = picked);
+      await _loadLaporan();
     }
   }
 
   String get bulanTahun =>
       DateFormat('MMMM yyyy', 'id_ID').format(selectedDate);
+
+  int get totalPengunjung => laporan.length;
+  int get totalTiket => laporan.fold(0, (sum, item) => sum + item.jumlah);
+  int get totalPendapatan => laporan.fold(0, (sum, item) => sum + item.total);
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +94,7 @@ class _LaporanPageState extends State<LaporanPage> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Padding(
@@ -84,7 +123,6 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
             const SizedBox(height: 20),
 
-            // Statistik
             _buildStatCard(
               Icons.people,
               'Total Pengunjung',
@@ -100,7 +138,7 @@ class _LaporanPageState extends State<LaporanPage> {
             _buildStatCard(
               Icons.attach_money,
               'Total Pendapatan',
-              'Rp${NumberFormat("#,###", "id_ID").format(totalPendapatan)}',
+              'Rp ${NumberFormat("#,###", "id_ID").format(totalPendapatan)}',
               Colors.orange,
             ),
 
@@ -108,42 +146,38 @@ class _LaporanPageState extends State<LaporanPage> {
             Text('Detail Transaksi', style: textTheme.titleMedium),
             const SizedBox(height: 8),
 
-            // Detail Transaksi
             Expanded(
-              child: ListView.builder(
-                itemCount: laporanDetail.length,
-                itemBuilder: (context, index) {
-                  final item = laporanDetail[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.deepPurple,
-                        child: Text('${index + 1}'),
+              child:
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : laporan.isEmpty
+                      ? const Center(child: Text('Tidak ada transaksi.'))
+                      : ListView.builder(
+                        itemCount: laporan.length,
+                        itemBuilder: (context, index) {
+                          final item = laporan[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.deepPurple,
+                                child: Text('${index + 1}'),
+                              ),
+                              title: Text('${item.nama} - ${item.tanggal}'),
+                              subtitle: Text('${item.jumlah} tiket'),
+                              trailing: Text(
+                                'Rp ${NumberFormat('#,###', 'id_ID').format(item.total)}',
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      title: Text('${item['nama']} - ${item['tanggal']}'),
-                      subtitle: Text('${item['jumlah']} tiket'),
-                      trailing: Text(
-                        'Rp ${NumberFormat('#,###', 'id_ID').format(item['total'])}',
-                      ),
-                    ),
-                  );
-                },
-              ),
             ),
 
             const SizedBox(height: 12),
-
-            // Tombol Export
             Center(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Export PDF berhasil (simulasi).'),
-                    ),
-                  );
-                },
+                onPressed: _exportPDF,
                 icon: const Icon(Icons.picture_as_pdf),
                 label: const Text('Export PDF'),
                 style: ElevatedButton.styleFrom(
@@ -187,5 +221,49 @@ class _LaporanPageState extends State<LaporanPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportPDF() async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        build:
+            (context) => [
+              pw.Text(
+                'Laporan Pemesanan - $bulanTahun',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text('Total Pengunjung: $totalPengunjung'),
+              pw.Text('Total Tiket Terjual: $totalTiket'),
+              pw.Text(
+                'Total Pendapatan: Rp ${NumberFormat("#,###", "id_ID").format(totalPendapatan)}',
+              ),
+              pw.SizedBox(height: 16),
+              pw.Text(
+                'Detail Transaksi',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              ...laporan.map((item) {
+                return pw.Container(
+                  margin: const pw.EdgeInsets.only(bottom: 6),
+                  child: pw.Text(
+                    '${item.nama} | ${item.tanggal} | ${item.jumlah} tiket | Rp ${NumberFormat("#,###", "id_ID").format(item.total)}',
+                  ),
+                );
+              }),
+            ],
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 }
