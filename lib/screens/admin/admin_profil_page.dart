@@ -1,4 +1,12 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
 
 class AdminProfilPage extends StatefulWidget {
   const AdminProfilPage({super.key});
@@ -8,141 +16,209 @@ class AdminProfilPage extends StatefulWidget {
 }
 
 class _AdminProfilPageState extends State<AdminProfilPage> {
-  final TextEditingController _namaController = TextEditingController(
-    text: 'Admin Utama',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'admin@utama.com',
-  );
+  final _box = GetStorage();
+  final AuthService _authService = AuthService();
+  final _nameController = TextEditingController();
+
+  UserModel? _admin;
+  bool _isLoading = true;
+
+  Uint8List? _imageBytes;
+  XFile? _pickedFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    try {
+      final userData = await _authService.getCurrentUserProfile();
+      setState(() {
+        _admin = userData;
+        _nameController.text = userData?.name ?? '';
+        _isLoading = false;
+      });
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal memuat profil admin: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _pickedFile = picked;
+        _imageBytes = bytes;
+      });
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    if (_admin == null) return;
+    String? imageUrl;
+
+    try {
+      if (_imageBytes != null && _pickedFile != null) {
+        final fileExt = _pickedFile!.path.split('.').last;
+        final fileName = '${_admin!.userId}.$fileExt';
+        final filePath = 'user-avatars/$fileName';
+
+        await Supabase.instance.client.storage
+            .from('user-avatars')
+            .uploadBinary(
+              filePath,
+              _imageBytes!,
+              fileOptions: const FileOptions(upsert: true),
+            );
+
+        imageUrl = Supabase.instance.client.storage
+            .from('user-avatars')
+            .getPublicUrl(filePath);
+      }
+
+      await Supabase.instance.client
+          .from('users')
+          .update({
+            'name': _nameController.text,
+            if (imageUrl != null) 'foto_url': imageUrl,
+          })
+          .eq('user_id', _admin!.userId);
+
+      Get.snackbar(
+        'Berhasil',
+        'Profil admin diperbarui',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      _loadAdminData(); // refresh data
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal memperbarui profil: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
 
   void _logout() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Konfirmasi'),
-            content: const Text('Apakah kamu yakin ingin logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Berhasil logout')),
-                  );
-                },
-                child: const Text('Ya'),
-              ),
-            ],
-          ),
+    Get.defaultDialog(
+      title: 'Konfirmasi',
+      middleText: 'Apakah kamu yakin ingin logout?',
+      textCancel: 'Batal',
+      textConfirm: 'Ya',
+      confirmTextColor: Colors.white,
+      onConfirm: () async {
+        await _authService.logout();
+        _box.erase();
+        Get.offAllNamed('/login');
+        Get.snackbar(
+          'Logout',
+          'Berhasil logout',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: AdminProfilBody(
-        namaController: _namaController,
-        emailController: _emailController,
-        onLogout: _logout,
-      ),
-    );
-  }
-}
-
-class AdminProfilBody extends StatelessWidget {
-  final TextEditingController namaController;
-  final TextEditingController emailController;
-  final VoidCallback onLogout;
-
-  const AdminProfilBody({
-    super.key,
-    required this.namaController,
-    required this.emailController,
-    required this.onLogout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              const CircleAvatar(
-                radius: 50,
-                backgroundImage: AssetImage('assets/avatar_admin.png'),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Fitur ubah foto belum tersedia"),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage:
+                            _imageBytes != null
+                                ? MemoryImage(_imageBytes!)
+                                : (_admin?.fotoUrl.isNotEmpty ?? false)
+                                ? NetworkImage(_admin!.fotoUrl)
+                                : null,
+                        child:
+                            (_imageBytes == null &&
+                                    (_admin?.fotoUrl.isEmpty ?? true))
+                                ? const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.white,
+                                )
+                                : null,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      readOnly: true,
+                      controller: TextEditingController(
+                        text: _admin?.email ?? '',
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveChanges,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Simpan Perubahan'),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _logout,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.black),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'Log Out',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: namaController,
-            decoration: const InputDecoration(
-              labelText: 'Nama',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: emailController,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onLogout,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.black),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'Log Out',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
