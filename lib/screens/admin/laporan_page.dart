@@ -28,7 +28,6 @@ class _LaporanPageState extends State<LaporanPage> {
       initialDate: selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      locale: const Locale("id", "ID"),
     );
 
     if (picked != null && picked != selectedDate) {
