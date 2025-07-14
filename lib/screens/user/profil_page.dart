@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -17,18 +17,19 @@ class ProfilPage extends StatefulWidget {
 class _ProfilPageState extends State<ProfilPage> {
   final _box = GetStorage();
   final AuthService _authService = AuthService();
-
   final _nameController = TextEditingController();
+  final Color primaryColor = const Color(0xFF2563EB);
+
   UserModel? _user;
   bool _isLoading = true;
 
-  File? _selectedImage;
+  Uint8List? _imageBytes;
+  XFile? _pickedFile;
 
-  int _selectedIndex = 2; // index ke-2 untuk Profil
+  int _selectedIndex = 2;
 
   @override
   void initState() {
-    
     super.initState();
     _loadUserData();
   }
@@ -55,19 +56,43 @@ class _ProfilPageState extends State<ProfilPage> {
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
+      final bytes = await picked.readAsBytes();
       setState(() {
-        _selectedImage = File(picked.path);
+        _pickedFile = picked;
+        _imageBytes = bytes;
       });
     }
   }
 
   Future<void> _saveChanges() async {
     if (_user == null) return;
+    String? imageUrl;
 
     try {
+      if (_imageBytes != null && _pickedFile != null) {
+        final fileExt = _pickedFile!.path.split('.').last;
+        final fileName = '${_user!.userId}.$fileExt';
+        final filePath = 'user-avatars/$fileName';
+
+        await Supabase.instance.client.storage
+            .from('user-avatars')
+            .uploadBinary(
+              filePath,
+              _imageBytes!,
+              fileOptions: const FileOptions(upsert: true),
+            );
+
+        imageUrl = Supabase.instance.client.storage
+            .from('user-avatars')
+            .getPublicUrl(filePath);
+      }
+
       await Supabase.instance.client
           .from('users')
-          .update({'name': _nameController.text})
+          .update({
+            'name': _nameController.text,
+            if (imageUrl != null) 'foto_url': imageUrl,
+          })
           .eq('user_id', _user!.userId);
 
       Get.snackbar(
@@ -122,8 +147,8 @@ class _ProfilPageState extends State<ProfilPage> {
       appBar: AppBar(
         title: const Text('Profil'),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body:
@@ -140,31 +165,39 @@ class _ProfilPageState extends State<ProfilPage> {
                       onTap: _pickImage,
                       child: CircleAvatar(
                         radius: 50,
+                        backgroundColor: Colors.grey[300],
                         backgroundImage:
-                            _selectedImage != null
-                                ? FileImage(_selectedImage!)
-                                : const AssetImage('assets/avatar.png')
-                                    as ImageProvider,
-                        child: Align(
-                          alignment: Alignment.bottomRight,
-                          child: CircleAvatar(
-                            backgroundColor: Colors.white,
-                            radius: 14,
-                            child: const Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
+                            _imageBytes != null
+                                ? MemoryImage(_imageBytes!)
+                                : (_user?.fotoUrl.isNotEmpty ?? false)
+                                ? NetworkImage(_user!.fotoUrl)
+                                : null,
+                        child:
+                            (_imageBytes == null &&
+                                    (_user?.fotoUrl.isEmpty ?? true))
+                                ? const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.white,
+                                )
+                                : null,
                       ),
                     ),
                     const SizedBox(height: 24),
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nama',
-                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -173,19 +206,36 @@ class _ProfilPageState extends State<ProfilPage> {
                       controller: TextEditingController(
                         text: _user?.email ?? '',
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email',
-                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: _saveChanges,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Simpan Perubahan'),
+                        child: const Text(
+                          'Simpan Perubahan',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -195,16 +245,17 @@ class _ProfilPageState extends State<ProfilPage> {
                       child: OutlinedButton(
                         onPressed: _logout,
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.black),
+                          side: BorderSide(color: primaryColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            'Log Out',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          'Log Out',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
                           ),
                         ),
                       ),
@@ -215,6 +266,7 @@ class _ProfilPageState extends State<ProfilPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
+        selectedItemColor: primaryColor,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
