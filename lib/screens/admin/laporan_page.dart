@@ -16,6 +16,7 @@ class LaporanPage extends StatefulWidget {
 
 class _LaporanPageState extends State<LaporanPage> {
   final _service = PemesananService();
+  final primaryColor = const Color(0xFF2563EB);
   DateTime selectedDate = DateTime.now();
 
   List<Tiket> laporan = [];
@@ -96,33 +97,37 @@ class _LaporanPageState extends State<LaporanPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
+      body: Container(
+        color: const Color.fromARGB(235, 228, 235, 252),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Periode
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Periode: $bulanTahun',
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF2563EB),
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => _selectMonth(context),
                   icon: const Icon(Icons.date_range),
                   label: const Text('Pilih Bulan'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-
             _buildStatCard(
               Icons.people,
               'Total Pengunjung',
@@ -141,11 +146,9 @@ class _LaporanPageState extends State<LaporanPage> {
               'Rp ${NumberFormat("#,###", "id_ID").format(totalPendapatan)}',
               Colors.orange,
             ),
-
             const SizedBox(height: 24),
             Text('Detail Transaksi', style: textTheme.titleMedium),
             const SizedBox(height: 8),
-
             Expanded(
               child:
                   isLoading
@@ -157,23 +160,33 @@ class _LaporanPageState extends State<LaporanPage> {
                         itemBuilder: (context, index) {
                           final item = laporan[index];
                           return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            color: Colors.white, // <-- agar putih
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            elevation: 2,
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: Colors.deepPurple,
-                                child: Text('${index + 1}'),
+                                backgroundColor: primaryColor.withOpacity(0.1),
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(color: primaryColor),
+                                ),
                               ),
                               title: Text('${item.nama} - ${item.tanggal}'),
                               subtitle: Text('${item.jumlah} tiket'),
                               trailing: Text(
                                 'Rp ${NumberFormat('#,###', 'id_ID').format(item.total)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
             ),
-
             const SizedBox(height: 12),
             Center(
               child: ElevatedButton.icon(
@@ -206,6 +219,7 @@ class _LaporanPageState extends State<LaporanPage> {
     Color color,
   ) {
     return Card(
+      color: Colors.white, // <-- warna putih
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -225,7 +239,6 @@ class _LaporanPageState extends State<LaporanPage> {
 
   Future<void> _exportPDF() async {
     final pdf = pw.Document();
-
     pdf.addPage(
       pw.MultiPage(
         build:

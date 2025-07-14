@@ -100,18 +100,21 @@ class _PemesananPageState extends State<PemesananPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : pemesananList.isEmpty
-              ? const Center(child: Text('Belum ada data pemesanan.'))
-              : PemesananBody(
-                pemesananList: pemesananList,
-                onVerifikasi: verifikasi,
-                onTolak: tolak,
-                onHapus: hapus,
-                onBukaBukti: bukaBukti,
-              ),
+      backgroundColor: const Color(0xFFE4EBFC),
+      body: SafeArea(
+        child:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : pemesananList.isEmpty
+                ? const Center(child: Text('Belum ada data pemesanan.'))
+                : PemesananBody(
+                  pemesananList: pemesananList,
+                  onVerifikasi: verifikasi,
+                  onTolak: tolak,
+                  onHapus: hapus,
+                  onBukaBukti: bukaBukti,
+                ),
+      ),
     );
   }
 }
@@ -149,6 +152,7 @@ class PemesananBody extends StatelessWidget {
         if (isRejected) statusColor = Colors.red;
 
         return Card(
+          color: Colors.white, // ✅ ini menjaga warna putih
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

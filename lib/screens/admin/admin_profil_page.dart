@@ -19,6 +19,7 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
   final _box = GetStorage();
   final AuthService _authService = AuthService();
   final _nameController = TextEditingController();
+  final Color primaryColor = const Color(0xFF2563EB);
 
   UserModel? _admin;
   bool _isLoading = true;
@@ -99,7 +100,7 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
         snackPosition: SnackPosition.BOTTOM,
       );
 
-      _loadAdminData(); // refresh data
+      _loadAdminData();
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -134,6 +135,7 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -169,9 +171,18 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
                     const SizedBox(height: 24),
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nama',
-                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -180,19 +191,36 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
                       controller: TextEditingController(
                         text: _admin?.email ?? '',
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email',
-                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: _saveChanges,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Simpan Perubahan'),
+                        child: const Text(
+                          'Simpan Perubahan',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -202,16 +230,17 @@ class _AdminProfilPageState extends State<AdminProfilPage> {
                       child: OutlinedButton(
                         onPressed: _logout,
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.black),
+                          side: BorderSide(color: primaryColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            'Log Out',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          'Log Out',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
                           ),
                         ),
                       ),

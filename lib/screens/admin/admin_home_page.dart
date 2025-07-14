@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'laporan_page.dart';
 import 'pemesanan_page.dart';
 import 'pengguna_page.dart';
@@ -22,6 +23,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   int pendapatan = 0;
   int menungguKonfirmasi = 0;
 
+  final primaryColor = const Color(0xFF2563EB);
+
   final List<String> _titles = const [
     'Dashboard Admin',
     'Data Pemesanan',
@@ -31,11 +34,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   @override
   void initState() {
     super.initState();
-
-    // Jika ada arguments dari Get.toNamed('/admin-home', arguments: 1)
     final argIndex = Get.arguments as int?;
     _selectedIndex = argIndex ?? 0;
-
     _loadStatistik();
   }
 
@@ -79,13 +79,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 0) {
-      _loadStatistik();
-    }
+    setState(() => _selectedIndex = index);
+    if (index == 0) _loadStatistik();
   }
 
   @override
@@ -96,25 +91,29 @@ class _AdminHomePageState extends State<AdminHomePage> {
         tiket: tiketTerjual,
         pendapatan: pendapatan,
         menunggu: menungguKonfirmasi,
+        primaryColor: primaryColor,
       ),
       const PemesananPage(),
       const AdminProfilPage(),
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFE4EBFC),
       appBar: AppBar(
         title: Text(
           _titles[_selectedIndex],
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
       ),
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
-        selectedItemColor: Colors.deepPurple,
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
@@ -134,12 +133,14 @@ class _DashboardPage extends StatelessWidget {
   final int tiket;
   final int pendapatan;
   final int menunggu;
+  final Color primaryColor;
 
   const _DashboardPage({
     required this.pengunjung,
     required this.tiket,
     required this.pendapatan,
     required this.menunggu,
+    required this.primaryColor,
   });
 
   String _getFormattedDate() {
@@ -161,7 +162,7 @@ class _DashboardPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             _getFormattedDate(),
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF2563EB)),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -172,7 +173,7 @@ class _DashboardPage extends StatelessWidget {
                 title: 'Pengunjung',
                 value: '$pengunjung',
                 icon: Icons.people,
-                color: Colors.blue,
+                color: primaryColor,
               ),
               _StatCard(
                 title: 'Tiket Terjual',
@@ -209,7 +210,7 @@ class _DashboardPage extends StatelessWidget {
                 _MenuItem(
                   icon: Icons.people,
                   label: 'Pengguna',
-                  color: Colors.blue,
+                  color: primaryColor,
                   page: PenggunaPage(),
                 ),
                 _MenuItem(
@@ -243,7 +244,7 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 90,
+      width: 120, // 📌 Ukuran card diperbesar dari 90 → 120
       child: GestureDetector(
         onTap:
             () => Navigator.push(
@@ -251,20 +252,29 @@ class _MenuItem extends StatelessWidget {
               MaterialPageRoute(builder: (_) => page),
             ),
         child: Card(
-          elevation: 2,
+          color: Colors.white,
+          elevation: 3,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              vertical: 18,
+            ), // 📌 Tambah padding
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 26, color: color),
-                const SizedBox(height: 6),
+                Icon(
+                  icon,
+                  size: 32,
+                  color: color,
+                ), // 📌 Ikon diperbesar dari 26 → 32
+                const SizedBox(height: 8),
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 12),
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ), // 📌 Font size sedikit dibesarkan
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -292,10 +302,11 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: (MediaQuery.of(context).size.width - 48) / 2,
+      width: (MediaQuery.of(context).size.width - 46) / 2,
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        color: Colors.white,
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           child: Row(
