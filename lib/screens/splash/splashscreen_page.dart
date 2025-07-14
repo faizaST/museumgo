@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:utama/screens/auth/login_page.dart';
+import '../../screens/auth/login_page.dart';
 
 class SplashscreenPage extends StatefulWidget {
   const SplashscreenPage({super.key});
@@ -39,7 +39,7 @@ class _SplashscreenPageState extends State<SplashscreenPage>
       end: 1.0,
     ).animate(_loaderController);
 
-    logoController.forward().then(() {
+    _logoController.forward().then((_) {
       Future.delayed(const Duration(milliseconds: 300), () {
         _loaderController.forward();
       });
