@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'konfirmasi_page.dart';
 
 class PesanPage extends StatefulWidget {
@@ -9,17 +11,20 @@ class PesanPage extends StatefulWidget {
 }
 
 class _PesanPageState extends State<PesanPage> {
+  final _box = GetStorage();
+
   DateTime? _tanggalKunjungan;
+
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _tanggalController = TextEditingController();
   final TextEditingController _jumlahTiketController = TextEditingController(
     text: '1',
   );
 
-  int _selectedIndex = 0; // Beranda
+  int _stokTiket = 0;
 
   void _pilihTanggal() async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: _tanggalKunjungan ?? DateTime.now(),
       firstDate: DateTime.now(),
@@ -29,47 +34,50 @@ class _PesanPageState extends State<PesanPage> {
       setState(() {
         _tanggalKunjungan = picked;
         _tanggalController.text =
-            "${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
+      _cekStok(picked);
     }
+  }
+
+  void _cekStok(DateTime tanggal) {
+    final key = 'stok_${tanggal.toIso8601String().substring(0, 10)}';
+    final stok = _box.read(key) ?? 100;
+    setState(() => _stokTiket = stok);
   }
 
   void _submitPesanan() {
-    if (_namaController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan isi nama pengunjung')),
+    if (_namaController.text.isEmpty || _tanggalKunjungan == null) {
+      Get.snackbar(
+        'Error',
+        'Semua data wajib diisi',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
       );
       return;
     }
 
-    if (_tanggalKunjungan == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan pilih tanggal kunjungan')),
+    final jumlah = int.tryParse(_jumlahTiketController.text) ?? 1;
+    if (jumlah > _stokTiket) {
+      Get.snackbar(
+        'Stok Tidak Cukup',
+        'Sisa tiket: $_stokTiket',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
       );
       return;
     }
 
-    int jumlah = int.tryParse(_jumlahTiketController.text) ?? 1;
+    final key = 'stok_${_tanggalKunjungan!.toIso8601String().substring(0, 10)}';
+    _box.write(key, _stokTiket - jumlah);
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => KonfirmasiPage(
-              namaPengunjung: _namaController.text,
-              tanggalKunjungan: _tanggalKunjungan!,
-              jumlahTiket: jumlah,
-            ),
+    Get.to(
+      () => KonfirmasiPage(
+        namaPengunjung: _namaController.text,
+        tanggalKunjungan: _tanggalKunjungan!,
+        jumlahTiket: jumlah,
       ),
     );
-  }
-
-  void _onNavTapped(int index) {
-    if (_selectedIndex == index) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   @override
@@ -83,10 +91,11 @@ class _PesanPageState extends State<PesanPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pesan Tiket'), centerTitle: true),
+      appBar: AppBar(title: const Text('Pesan Tiket')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _namaController,
@@ -106,6 +115,12 @@ class _PesanPageState extends State<PesanPage> {
                 suffixIcon: Icon(Icons.calendar_today),
               ),
             ),
+            const SizedBox(height: 8),
+            if (_tanggalKunjungan != null)
+              Text(
+                'Stok tiket tersedia: $_stokTiket',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             const SizedBox(height: 16),
             TextField(
               controller: _jumlahTiketController,
@@ -118,12 +133,6 @@ class _PesanPageState extends State<PesanPage> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _submitPesanan,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 14,
-                ),
-              ),
               child: const Text('Pesan Tiket'),
             ),
           ],

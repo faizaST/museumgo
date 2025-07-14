@@ -5,6 +5,7 @@ class Tiket {
   final int jumlah;
   final int total;
   final String buktiUrl;
+  final String status;
 
   Tiket({
     required this.userId,
@@ -13,6 +14,7 @@ class Tiket {
     required this.jumlah,
     required this.total,
     required this.buktiUrl,
+    required this.status,
   });
 
   Map<String, dynamic> toMap() => {
@@ -22,5 +24,6 @@ class Tiket {
     'jumlah': jumlah,
     'total': total,
     'bukti_url': buktiUrl,
+    'status': status,
   };
 }

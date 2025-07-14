@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'laporan_page.dart';
 import 'pemesanan_page.dart';
 import 'pengguna_page.dart';
@@ -15,11 +18,12 @@ class AdminHomePage extends StatefulWidget {
 class _AdminHomePageState extends State<AdminHomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    _DashboardPage(),
-    PemesananPage(),
-    AdminProfilPage(),
-  ];
+  int pengunjung = 0;
+  int tiketTerjual = 0;
+  int pendapatan = 0;
+  int menungguKonfirmasi = 0;
+
+  final primaryColor = const Color(0xFF2563EB);
 
   final List<String> _titles = const [
     'Dashboard Admin',
@@ -27,31 +31,90 @@ class _AdminHomePageState extends State<AdminHomePage> {
     'Profil Admin',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    final argIndex = Get.arguments as int?;
+    _selectedIndex = argIndex ?? 0;
+    _loadStatistik();
+  }
+
+  Future<void> _loadStatistik() async {
+    final client = Supabase.instance.client;
+    final now = DateTime.now();
+    final awal = DateTime(now.year, now.month, 1);
+    final akhir = DateTime(now.year, now.month + 1, 0);
+    final formatter = DateFormat('yyyy-MM-dd');
+
+    try {
+      final konfirmasi = await client
+          .from('pemesanan')
+          .select()
+          .eq('status', 'Dikonfirmasi')
+          .gte('tanggal', formatter.format(awal))
+          .lte('tanggal', formatter.format(akhir));
+
+      final menunggu = await client
+          .from('pemesanan')
+          .select()
+          .eq('status', 'Menunggu')
+          .gte('tanggal', formatter.format(awal))
+          .lte('tanggal', formatter.format(akhir));
+
+      setState(() {
+        pengunjung = konfirmasi.length;
+        tiketTerjual = konfirmasi.fold(
+          0,
+          (sum, item) => sum + (item['jumlah'] as int? ?? 0),
+        );
+        pendapatan = konfirmasi.fold(
+          0,
+          (sum, item) => sum + (item['total'] as int? ?? 0),
+        );
+        menungguKonfirmasi = menunggu.length;
+      });
+    } catch (e) {
+      print('❌ Gagal memuat statistik: $e');
+    }
+  }
+
   void _onNavTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
+    if (index == 0) _loadStatistik();
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      _DashboardPage(
+        pengunjung: pengunjung,
+        tiket: tiketTerjual,
+        pendapatan: pendapatan,
+        menunggu: menungguKonfirmasi,
+        primaryColor: primaryColor,
+      ),
+      const PemesananPage(),
+      const AdminProfilPage(),
+    ];
+
     return Scaffold(
+      backgroundColor: const Color(0xFFE4EBFC),
       appBar: AppBar(
         title: Text(
           _titles[_selectedIndex],
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
       ),
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
-        selectedItemColor: Colors.deepPurple,
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 10,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
@@ -66,7 +129,19 @@ class _AdminHomePageState extends State<AdminHomePage> {
 }
 
 class _DashboardPage extends StatelessWidget {
-  const _DashboardPage();
+  final int pengunjung;
+  final int tiket;
+  final int pendapatan;
+  final int menunggu;
+  final Color primaryColor;
+
+  const _DashboardPage({
+    required this.pengunjung,
+    required this.tiket,
+    required this.pendapatan,
+    required this.menunggu,
+    required this.primaryColor,
+  });
 
   String _getFormattedDate() {
     final now = DateTime.now();
@@ -87,49 +162,45 @@ class _DashboardPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             _getFormattedDate(),
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF2563EB)),
           ),
           const SizedBox(height: 16),
-
-          // Statistik
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: const [
+            children: [
               _StatCard(
                 title: 'Pengunjung',
-                value: '125',
+                value: '$pengunjung',
                 icon: Icons.people,
-                color: Colors.blue,
+                color: primaryColor,
               ),
               _StatCard(
                 title: 'Tiket Terjual',
-                value: '98',
+                value: '$tiket',
                 icon: Icons.confirmation_num,
                 color: Colors.green,
               ),
               _StatCard(
                 title: 'Pendapatan',
-                value: 'Rp1.500.000',
+                value: 'Rp${NumberFormat('#,###', 'id_ID').format(pendapatan)}',
                 icon: Icons.attach_money,
                 color: Colors.orange,
               ),
               _StatCard(
-                title: 'Menunggu Verifikasi',
-                value: '12',
+                title: 'Menunggu Konfirmasi',
+                value: '$menunggu',
                 icon: Icons.schedule,
                 color: Colors.red,
               ),
             ],
           ),
-
           const SizedBox(height: 20),
           const Text(
             'Kelola Data',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-
           Center(
             child: Wrap(
               spacing: 16,
@@ -139,7 +210,7 @@ class _DashboardPage extends StatelessWidget {
                 _MenuItem(
                   icon: Icons.people,
                   label: 'Pengguna',
-                  color: Colors.blue,
+                  color: primaryColor,
                   page: PenggunaPage(),
                 ),
                 _MenuItem(
@@ -157,7 +228,6 @@ class _DashboardPage extends StatelessWidget {
   }
 }
 
-// Widget untuk menu kelola data
 class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -174,29 +244,37 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 90,
+      width: 120, // 📌 Ukuran card diperbesar dari 90 → 120
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => page),
-          );
-        },
+        onTap:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => page),
+            ),
         child: Card(
-          elevation: 2,
+          color: Colors.white,
+          elevation: 3,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              vertical: 18,
+            ), // 📌 Tambah padding
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 26, color: color),
-                const SizedBox(height: 6),
+                Icon(
+                  icon,
+                  size: 32,
+                  color: color,
+                ), // 📌 Ikon diperbesar dari 26 → 32
+                const SizedBox(height: 8),
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 12),
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ), // 📌 Font size sedikit dibesarkan
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -208,7 +286,6 @@ class _MenuItem extends StatelessWidget {
   }
 }
 
-// Widget untuk kartu statistik
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -225,10 +302,11 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: (MediaQuery.of(context).size.width - 48) / 2,
+      width: (MediaQuery.of(context).size.width - 46) / 2,
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        color: Colors.white,
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           child: Row(
