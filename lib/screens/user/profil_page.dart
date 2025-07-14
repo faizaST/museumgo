@@ -28,6 +28,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
   @override
   void initState() {
+    
     super.initState();
     _loadUserData();
   }
