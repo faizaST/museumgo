@@ -90,18 +90,34 @@ class _PesanPageState extends State<PesanPage> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Color(0xFF2563EB);
     return Scaffold(
-      appBar: AppBar(title: const Text('Pesan Tiket')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Pesan Tiket'),
+        centerTitle: true,
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 1,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _namaController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nama Pengunjung',
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -109,31 +125,66 @@ class _PesanPageState extends State<PesanPage> {
               controller: _tanggalController,
               readOnly: true,
               onTap: _pilihTanggal,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Tanggal Kunjungan',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.calendar_today),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: const Icon(Icons.calendar_today),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 8),
             if (_tanggalKunjungan != null)
-              Text(
-                'Stok tiket tersedia: $_stokTiket',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Stok tiket tersedia: $_stokTiket',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             const SizedBox(height: 16),
             TextField(
               controller: _jumlahTiketController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Jumlah Tiket',
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _submitPesanan,
-              child: const Text('Pesan Tiket'),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _submitPesanan,
+                child: const Text(
+                  'Pesan Tiket',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
