@@ -44,22 +44,21 @@ class _AdminHomePageState extends State<AdminHomePage> {
     final now = DateTime.now();
     final awal = DateTime(now.year, now.month, 1);
     final akhir = DateTime(now.year, now.month + 1, 0);
-    final formatter = DateFormat('yyyy-MM-dd');
 
     try {
       final konfirmasi = await client
           .from('pemesanan')
           .select()
           .eq('status', 'Dikonfirmasi')
-          .gte('tanggal', formatter.format(awal))
-          .lte('tanggal', formatter.format(akhir));
+          .gte('tanggal', awal)
+          .lte('tanggal', akhir);
 
       final menunggu = await client
           .from('pemesanan')
           .select()
-          .eq('status', 'Menunggu')
-          .gte('tanggal', formatter.format(awal))
-          .lte('tanggal', formatter.format(akhir));
+          .eq('status', 'Menunggu Konfirmasi') // ✅ diperbaiki dari 'Menunggu'
+          .gte('tanggal', awal)
+          .lte('tanggal', akhir);
 
       setState(() {
         pengunjung = konfirmasi.length;
