@@ -135,7 +135,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
   void _onNavTapped(int index) {
     setState(() => _selectedIndex = index);
-    if (index == 0) Get.offAllNamed('/user_home');
+    if (index == 0) Get.offAllNamed('/user-home');
     if (index == 1) Get.offAllNamed('/riwayat');
     if (index == 2) Get.offAllNamed('/profil');
   }
