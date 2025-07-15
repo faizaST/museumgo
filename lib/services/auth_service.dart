@@ -4,7 +4,7 @@ import '../models/user_model.dart';
 class AuthService {
   final _client = Supabase.instance.client;
 
-  // Register User
+  // 🔐 Register User
   Future<void> registerUser({
     required String name,
     required String email,
@@ -33,6 +33,7 @@ class AuthService {
         'name': name,
         'email': email,
         'role': 'user',
+        'is_blocked': false, // default tidak diblokir
       });
     } else {
       // Update name kalau sudah ada
@@ -40,7 +41,7 @@ class AuthService {
     }
   }
 
-  // Login User
+  // 🔐 Login User dengan cek blokir
   Future<UserModel> loginUser({
     required String email,
     required String password,
@@ -51,15 +52,23 @@ class AuthService {
     );
 
     final user = response.user;
-    if (user == null) throw AuthException("Login gagal");
+    if (user == null) throw AuthException("Login gagal: akun tidak ditemukan");
 
+    // Ambil data pengguna dari tabel 'users'
     final data =
         await _client.from('users').select().eq('user_id', user.id).single();
 
+    // ❌ Blokir pengguna jika is_blocked = true
+    if (data['is_blocked'] == true) {
+      await _client.auth.signOut(); // Paksa logout
+      throw AuthException("Akun Anda telah diblokir. Hubungi admin.");
+    }
+
+    // ✅ Return userModel jika tidak diblokir
     return UserModel.fromMap(data);
   }
 
-  // Get current logged-in user's profile
+  // 🔄 Ambil profile pengguna aktif
   Future<UserModel?> getCurrentUserProfile() async {
     final user = _client.auth.currentUser;
     if (user == null) return null;
@@ -70,7 +79,7 @@ class AuthService {
     return UserModel.fromMap(data);
   }
 
-  // Logout
+  // 🚪 Logout
   Future<void> logout() async {
     await _client.auth.signOut();
   }
