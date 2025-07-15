@@ -58,7 +58,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Load riwayat error: $e');
       Get.snackbar(
         'Error',
         'Gagal memuat data: $e',
@@ -94,12 +93,16 @@ class _RiwayatPageState extends State<RiwayatPage> {
       context: context,
       builder:
           (_) => AlertDialog(
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
             title: const Text(
               'Detail Pemesanan',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2563EB),
+              ),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -135,13 +138,16 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     },
                     child: Row(
                       children: const [
-                        Icon(Icons.picture_as_pdf_outlined, color: Colors.blue),
+                        Icon(
+                          Icons.picture_as_pdf_outlined,
+                          color: Color(0xFF2563EB),
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Bukti Pembayaran',
                           style: TextStyle(
                             decoration: TextDecoration.underline,
-                            color: Colors.blue,
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                       ],
@@ -174,41 +180,46 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     return GestureDetector(
       onTap: () => _showDetailPopup(tiket),
-      child: Container(
+      child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black87),
+        elevation: 3,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xFF2563EB)),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tiket.nama,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tiket.nama,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF2563EB),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('Tanggal: ${tiket.tanggal}'),
-                  Text('Jumlah Tiket: ${tiket.jumlah}'),
-                  Text(
-                    'Status: ${tiket.status}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
+                    const SizedBox(height: 4),
+                    Text('Tanggal: ${tiket.tanggal}'),
+                    Text('Jumlah Tiket: ${tiket.jumlah}'),
+                    Text(
+                      'Status: ${tiket.status}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16),
-          ],
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
         ),
       ),
     );
@@ -216,27 +227,37 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF2563EB);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Riwayat Pemesanan',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
-        foregroundColor: Colors.black,
+        backgroundColor: primaryColor,
         elevation: 0,
       ),
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                child: CircularProgressIndicator(color: primaryColor),
+              )
               : RefreshIndicator(
                 onRefresh: _loadRiwayat,
                 child:
                     _riwayat.isEmpty
                         ? ListView(
-                          children: [
+                          children: const [
                             SizedBox(height: 300),
-                            Center(child: Text('Belum ada riwayat pemesanan.')),
+                            Center(
+                              child: Text(
+                                'Belum ada riwayat pemesanan.',
+                                style: TextStyle(color: Colors.black54),
+                              ),
+                            ),
                           ],
                         )
                         : ListView(
@@ -246,7 +267,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
-        selectedItemColor: Colors.black,
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
         showUnselectedLabels: true,
