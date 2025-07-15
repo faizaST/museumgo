@@ -27,6 +27,8 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
   String? _uploadedImageUrl;
   XFile? _imageFile;
 
+  final Color primaryColor = const Color(0xFF2563EB);
+
   Future<void> _pickImageAndUpload() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -39,7 +41,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
             '${DateTime.now().millisecondsSinceEpoch}_${pickedFile.name}';
         final fileBytes = await pickedFile.readAsBytes();
 
-        // Upload ke Supabase Storage
         await Supabase.instance.client.storage
             .from('bukti-pembayaran')
             .uploadBinary('bukti_url/$fileName', fileBytes);
@@ -53,8 +54,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
           _uploadedImageUrl = publicUrl;
         });
 
-        print('✅ Upload berhasil. Public URL: $_uploadedImageUrl');
-
         Get.snackbar(
           'Upload Berhasil',
           'Bukti pembayaran berhasil diunggah',
@@ -63,7 +62,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
           colorText: Colors.white,
         );
       } catch (e) {
-        print('❌ Upload error: $e');
         Get.snackbar(
           'Upload Gagal',
           'Terjadi kesalahan: $e',
@@ -121,8 +119,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
               .select()
               .single();
 
-      print('✅ Insert response: $response');
-
       _box.write('last_konfirmasi', response);
 
       Get.offAllNamed('/riwayat');
@@ -135,7 +131,6 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
         colorText: Colors.white,
       );
     } catch (e) {
-      print('❌ Insert error: $e');
       Get.snackbar(
         'Gagal',
         'Terjadi kesalahan saat menyimpan: $e',
@@ -155,8 +150,8 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
       appBar: AppBar(
         title: const Text('Pesan Tiket'),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0.5,
       ),
       body: SingleChildScrollView(
@@ -164,6 +159,17 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'Detail Pemesanan',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2563EB),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Box informasi
             _buildInfoBox(
               label: 'Nama Pengunjung',
               value: widget.namaPengunjung,
@@ -176,89 +182,123 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
               label: 'Jumlah Tiket',
               value: '${widget.jumlahTiket}',
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            // Total pembayaran
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black),
-                borderRadius: BorderRadius.circular(8),
+                color: Color.fromARGB(255, 73, 124, 235),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   const Text(
                     'Total yang harus dibayar:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'Rp $totalBayar',
                     style: const TextStyle(
-                      fontSize: 20,
+                      color: Colors.white,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Center(
-              child: Column(
+
+            const SizedBox(height: 24),
+
+            // Transfer info
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: primaryColor),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
                 children: const [
-                  Text(
-                    'Silakan transfer ke:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF2563EB),
                   ),
-                  SizedBox(height: 4),
-                  Text('BCA - 1234567890 a.n. MuseumGo'),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Silakan transfer ke:',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(height: 4),
+                        Text('BCA - 1234567890 a.n. MuseumGo'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
+
+            // Upload bukti
             const Text(
               'Unggah Bukti Pembayaran',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2563EB),
+              ),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: _isUploading ? null : _pickImageAndUpload,
-              icon: const Icon(Icons.upload_file, color: Colors.black),
+              icon: Icon(Icons.upload_file, color: primaryColor),
               label: Text(
                 _isUploading
                     ? 'Mengunggah...'
                     : (_uploadedImageUrl != null
                         ? 'Bukti sudah diupload'
                         : 'Unggah Bukti Pembayaran'),
-                style: const TextStyle(color: Colors.black),
+                style: TextStyle(color: primaryColor),
               ),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.black),
+                side: BorderSide(color: primaryColor),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 minimumSize: const Size.fromHeight(48),
                 backgroundColor: Colors.white,
               ),
             ),
+
             const SizedBox(height: 32),
+
+            // Tombol konfirmasi
             Center(
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isUploading ? null : _submit,
-                child: const Text(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text(
                   'Konfirmasi Pesanan',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.black),
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,
                     vertical: 16,
                   ),
-                  elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
               ),
@@ -275,7 +315,7 @@ class _KonfirmasiPageState extends State<KonfirmasiPage> {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
+        border: Border.all(color: const Color(0xFF2563EB)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
