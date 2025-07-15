@@ -16,14 +16,14 @@ class _UserHomePageState extends State<UserHomePage> {
   int _currentPage = 0;
 
   final List<String> _imageList = [
-    'assets/museum1.jpg',
-    'assets/museum2.jpg',
-    'assets/museum3.jpg',
+    'assets/images/Museum01.png',
+    'assets/images/Museum02.png',
+    'assets/images/Museum03.png',
+    'assets/images/Museum04.png',
   ];
 
   void _onNavTapped(int index) {
     if (index == 0) {
-      // Beranda: tidak melakukan apa-apa, tetap di halaman ini
       setState(() {
         _selectedIndex = 0;
       });
@@ -42,26 +42,37 @@ class _UserHomePageState extends State<UserHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF2563EB);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Home', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Home',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: primaryColor,
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
+              const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Nama Museum',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
 
               // PageView Gambar
               SizedBox(
@@ -74,7 +85,7 @@ class _UserHomePageState extends State<UserHomePage> {
                   },
                   itemBuilder: (context, index) {
                     return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 8),
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey),
                         borderRadius: BorderRadius.circular(8),
@@ -87,8 +98,7 @@ class _UserHomePageState extends State<UserHomePage> {
                   },
                 ),
               ),
-
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
 
               // Indikator halaman
               Row(
@@ -96,21 +106,20 @@ class _UserHomePageState extends State<UserHomePage> {
                 children: List.generate(
                   _imageList.length,
                   (index) => Container(
-                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: _currentPage == index ? 12 : 8,
                     height: _currentPage == index ? 12 : 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color:
                           _currentPage == index
-                              ? Colors.black
+                              ? primaryColor
                               : Colors.grey[400],
                     ),
                   ),
                 ),
               ),
-
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Deskripsi Museum
               Card(
@@ -118,65 +127,77 @@ class _UserHomePageState extends State<UserHomePage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                color: Colors.white,
+                color: primaryColor,
                 child: Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: const [
                       Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blueAccent),
+                          Icon(Icons.info_outline, color: Colors.white),
                           SizedBox(width: 8),
                           Text(
                             "Tentang Museum",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 17,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                       SizedBox(height: 12),
                       Text(
-                        'Museum Nasional (Museum Gajah) adalah museum tertua di Indonesia yang menyimpan lebih dari 140.000 koleksi bersejarah, termasuk arca Hindu-Buddha, keramik kuno, dan benda budaya nusantara.',
+                        'Museum Seni Rupa dan Keramik merupakan tempat yang menyimpan beragam koleksi karya seni rupa Indonesia, mulai dari lukisan, patung, hingga keramik tradisional dan modern. Museum ini didirikan pada tahun 1976 dan berlokasi di kawasan Kota Tua Jakarta. Di dalamnya terdapat lebih dari 400 lukisan dari seniman terkenal, serta koleksi keramik yang berasal dari berbagai daerah di Indonesia dan luar negeri.',
                         textAlign: TextAlign.justify,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: Colors.white,
                           height: 1.5,
                         ),
                       ),
+
                       SizedBox(height: 12),
                       Text(
-                        '📍 Lokasi: Jakarta Pusat\n🕒 Jam Buka: 08.00 - 16.00 WIB\n🎟️ Harga Tiket: Rp25.000\n🛎️ Fasilitas: Parkir, Panduan Wisata, Toilet, Mushola, Akses Disabilitas',
-                        style: TextStyle(fontSize: 14, height: 1.4),
+                        '📍 Lokasi: Jakarta Pusat\n🕒 Jam Buka: 08.00 - 16.00 WIB\n🎟️ Harga Tiket: Rp50.000\n🛎️ Fasilitas: Parkir, Panduan Wisata, Toilet, Mushola, Akses Disabilitas',
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
 
-              SizedBox(height: 24),
+              // Tombol Pesan Tiket
               Center(
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PesanPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const PesanPage(),
+                      ),
                     );
                   },
+                  icon: const Icon(Icons.local_activity), // ikon tiket
+                  label: const Text(
+                    "Pesan Tiket",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    elevation: 3,
-                    side: BorderSide(color: Colors.black),
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    minimumSize: const Size(double.infinity, 50), // full lebar
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: Text("Pesan Tiket"),
                 ),
               ),
             ],
@@ -186,11 +207,11 @@ class _UserHomePageState extends State<UserHomePage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onNavTapped,
-        selectedItemColor: Colors.black,
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
