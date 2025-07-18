@@ -122,10 +122,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     onTap: () async {
                       final url = Uri.parse(tiket.buktiUrl);
                       if (await canLaunchUrl(url)) {
-                        await launchUrl(
+                        if (!await launchUrl(
                           url,
                           mode: LaunchMode.externalApplication,
-                        );
+                        )) {
+                          await launchUrl(url, mode: LaunchMode.inAppWebView);
+                        }
                       } else {
                         Get.snackbar(
                           'Gagal',
@@ -168,7 +170,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
   Widget buildRiwayatCard(Tiket tiket) {
     Color statusColor;
     switch (tiket.status) {
-      case 'Terverifikasi':
+      case 'Dikonfirmasi':
         statusColor = Colors.green;
         break;
       case 'Ditolak':

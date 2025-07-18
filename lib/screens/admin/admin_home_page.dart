@@ -187,7 +187,7 @@ class _DashboardPage extends StatelessWidget {
                 color: Colors.orange,
               ),
               _StatCard(
-                title: 'Menunggu Konfirmasi',
+                title: 'Konfirmasi',
                 value: '$menunggu',
                 icon: Icons.schedule,
                 color: Colors.red,
@@ -243,7 +243,7 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 120, // 📌 Ukuran card diperbesar dari 90 → 120
+      width: 150,
       child: GestureDetector(
         onTap:
             () => Navigator.push(
@@ -257,23 +257,15 @@ class _MenuItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 18,
-            ), // 📌 Tambah padding
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ), // 📌 Ikon diperbesar dari 26 → 32
+                Icon(icon, size: 32, color: color),
                 const SizedBox(height: 8),
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                  ), // 📌 Font size sedikit dibesarkan
+                  style: const TextStyle(fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
               ],

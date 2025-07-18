@@ -89,7 +89,9 @@ class _PemesananPageState extends State<PemesananPage> {
   Future<void> bukaBukti(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        await launchUrl(uri, mode: LaunchMode.inAppWebView);
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tidak dapat membuka bukti pembayaran')),
@@ -152,7 +154,7 @@ class PemesananBody extends StatelessWidget {
         if (isRejected) statusColor = Colors.red;
 
         return Card(
-          color: Colors.white, // ✅ ini menjaga warna putih
+          color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -220,38 +222,50 @@ class PemesananBody extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
                   children: [
                     if (!isConfirmed && !isRejected)
                       ElevatedButton.icon(
                         onPressed: () => onVerifikasi(index),
-                        icon: const Icon(Icons.check),
-                        label: const Text('Konfirmasi'),
+                        icon: const Icon(Icons.check, size: 16),
+                        label: const Text(
+                          'Konfirmasi',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
+                          minimumSize: const Size(100, 32),
                         ),
                       ),
-                    const SizedBox(width: 8),
                     if (!isConfirmed && !isRejected)
                       ElevatedButton.icon(
                         onPressed: () => onTolak(index),
-                        icon: const Icon(Icons.close),
-                        label: const Text('Tolak'),
+                        icon: const Icon(Icons.close, size: 16),
+                        label: const Text(
+                          'Tolak',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
+                          minimumSize: const Size(80, 32),
                         ),
                       ),
-                    const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: () => onHapus(index),
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Hapus'),
+                      icon: const Icon(Icons.delete, size: 16),
+                      label: const Text(
+                        'Hapus',
+                        style: TextStyle(fontSize: 12),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(80, 32),
                       ),
                     ),
                   ],
