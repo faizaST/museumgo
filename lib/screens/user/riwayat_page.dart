@@ -42,19 +42,33 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
     try {
       final data = await _service.ambilPemesananUser(user.id);
+      List<Tiket> tempRiwayat = [];
+
+      for (var e in data) {
+        String buktiPath = e['bukti_url'] ?? '';
+        String buktiUrl = '';
+        if (buktiPath.isNotEmpty) {
+          final response = Supabase.instance.client.storage
+              .from('bukti-pembayaran')
+              .getPublicUrl(buktiPath.replaceFirst('bukti-pembayaran/', ''));
+          buktiUrl = response;
+        }
+
+        tempRiwayat.add(
+          Tiket(
+            userId: e['user_id'],
+            nama: e['nama'],
+            tanggal: e['tanggal'],
+            jumlah: e['jumlah'],
+            total: e['total'],
+            buktiUrl: buktiUrl,
+            status: e['status'] ?? 'Menunggu Konfirmasi',
+          ),
+        );
+      }
+
       setState(() {
-        _riwayat =
-            data.map((e) {
-              return Tiket(
-                userId: e['user_id'],
-                nama: e['nama'],
-                tanggal: e['tanggal'],
-                jumlah: e['jumlah'],
-                total: e['total'],
-                buktiUrl: e['bukti_url'],
-                status: e['status'] ?? 'Menunggu Konfirmasi',
-              );
-            }).toList();
+        _riwayat = tempRiwayat;
         _isLoading = false;
       });
     } catch (e) {

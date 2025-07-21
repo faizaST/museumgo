@@ -29,13 +29,34 @@ class _PemesananPageState extends State<PemesananPage> {
   }
 
   Future<void> ambilPemesanan() async {
-    final response = await Supabase.instance.client
+    final supabase = Supabase.instance.client;
+
+    final response = await supabase
         .from('pemesanan')
         .select()
         .order('created_at', ascending: false);
 
+    final List<Map<String, dynamic>> updatedList = [];
+
+    for (final data in response) {
+      final buktiPath = data['bukti_url'];
+      String? publicUrl;
+
+      if (buktiPath != null && buktiPath.toString().isNotEmpty) {
+        final url = supabase.storage
+            .from('bukti-pembayaran')
+            .getPublicUrl(buktiPath);
+        publicUrl = url;
+      }
+
+      updatedList.add({
+        ...data,
+        'bukti_url_public': publicUrl, // tambahkan URL publik
+      });
+    }
+
     setState(() {
-      pemesananList = List<Map<String, dynamic>>.from(response);
+      pemesananList = updatedList;
       isLoading = false;
     });
   }
@@ -86,16 +107,25 @@ class _PemesananPageState extends State<PemesananPage> {
     ).showSnackBar(SnackBar(content: Text('Pemesanan $nama dihapus')));
   }
 
-  Future<void> bukaBukti(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        await launchUrl(uri, mode: LaunchMode.inAppWebView);
+  Future<void> bukaBukti(String path) async {
+    try {
+      final publicUrl = Supabase.instance.client.storage
+          .from('bukti-pembayaran')
+          .getPublicUrl(path);
+
+      final uri = Uri.parse(publicUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka bukti pembayaran')),
+        );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka bukti pembayaran')),
-      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal membuka bukti: $e')));
     }
   }
 
@@ -147,7 +177,7 @@ class PemesananBody extends StatelessWidget {
         final status = item['status'] ?? 'Menunggu Konfirmasi';
         final isConfirmed = status == 'Dikonfirmasi';
         final isRejected = status == 'Ditolak';
-        final buktiUrl = item['bukti_url'] ?? '';
+        final buktiUrl = item['bukti_url_public'] ?? '';
 
         Color statusColor = Colors.orange;
         if (isConfirmed) statusColor = Colors.green;
@@ -221,6 +251,7 @@ class PemesananBody extends StatelessWidget {
                       ],
                     ),
                   ),
+
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
