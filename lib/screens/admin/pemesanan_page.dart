@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PemesananFullPage extends StatelessWidget {
   const PemesananFullPage({super.key});
@@ -39,19 +38,9 @@ class _PemesananPageState extends State<PemesananPage> {
     final List<Map<String, dynamic>> updatedList = [];
 
     for (final data in response) {
-      final buktiPath = data['bukti_url'];
-      String? publicUrl;
-
-      if (buktiPath != null && buktiPath.toString().isNotEmpty) {
-        final url = supabase.storage
-            .from('bukti-pembayaran')
-            .getPublicUrl(buktiPath);
-        publicUrl = url;
-      }
-
       updatedList.add({
         ...data,
-        'bukti_url_public': publicUrl, // tambahkan URL publik
+        'bukti_url_public': data['bukti_url'], // asumsi sudah full URL
       });
     }
 
@@ -107,28 +96,6 @@ class _PemesananPageState extends State<PemesananPage> {
     ).showSnackBar(SnackBar(content: Text('Pemesanan $nama dihapus')));
   }
 
-  Future<void> bukaBukti(String path) async {
-    try {
-      final publicUrl = Supabase.instance.client.storage
-          .from('bukti-pembayaran')
-          .getPublicUrl(path);
-
-      final uri = Uri.parse(publicUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat membuka bukti pembayaran')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal membuka bukti: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,7 +111,6 @@ class _PemesananPageState extends State<PemesananPage> {
                   onVerifikasi: verifikasi,
                   onTolak: tolak,
                   onHapus: hapus,
-                  onBukaBukti: bukaBukti,
                 ),
       ),
     );
@@ -156,7 +122,6 @@ class PemesananBody extends StatelessWidget {
   final void Function(int) onVerifikasi;
   final void Function(int) onTolak;
   final void Function(int) onHapus;
-  final void Function(String) onBukaBukti;
 
   const PemesananBody({
     super.key,
@@ -164,8 +129,44 @@ class PemesananBody extends StatelessWidget {
     required this.onVerifikasi,
     required this.onTolak,
     required this.onHapus,
-    required this.onBukaBukti,
   });
+
+  void showBuktiDialog(BuildContext context, String buktiUrl) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxHeight: 300,
+                    maxWidth: 300,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      buktiUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Text(
+                            'Gagal memuat gambar bukti pembayaran',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +201,7 @@ class PemesananBody extends StatelessWidget {
                     const Icon(Icons.person, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      item['nama'],
+                      item['nama'] ?? '',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -236,22 +237,23 @@ class PemesananBody extends StatelessWidget {
                 const SizedBox(height: 8),
                 if (buktiUrl.isNotEmpty)
                   InkWell(
-                    onTap: () => onBukaBukti(buktiUrl),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.receipt_long, color: Colors.blue),
-                        SizedBox(width: 6),
+                    onTap: () => showBuktiDialog(context, buktiUrl),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.receipt_long, color: Colors.blue, size: 16),
+                        SizedBox(width: 4),
                         Text(
                           'Lihat Bukti Pembayaran',
                           style: TextStyle(
                             color: Colors.blue,
+                            fontSize: 13,
                             decoration: TextDecoration.underline,
                           ),
                         ),
                       ],
                     ),
                   ),
-
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,

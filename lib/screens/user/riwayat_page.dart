@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/pesan_model.dart';
 import '../../services/pesan_service.dart';
@@ -16,281 +15,164 @@ class RiwayatPage extends StatefulWidget {
 }
 
 class _RiwayatPageState extends State<RiwayatPage> {
-  final _service = PemesananService();
-  int _selectedIndex = 1;
-  bool _isLoading = true;
-  List<Tiket> _riwayat = [];
+  final PemesananService _pemesananService = PemesananService();
+  final String userId = Supabase.instance.client.auth.currentUser!.id;
+  final Color primaryColor = const Color(0xFF2563EB);
+  List<Tiket> daftarPemesanan = [];
 
   @override
   void initState() {
     super.initState();
-    _loadRiwayat();
+    ambilData();
   }
 
-  Future<void> _loadRiwayat() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      Get.snackbar(
-        'Error',
-        'User tidak ditemukan. Silakan login ulang.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    try {
-      final data = await _service.ambilPemesananUser(user.id);
-      List<Tiket> tempRiwayat = [];
-
-      for (var e in data) {
-        String buktiPath = e['bukti_url'] ?? '';
-        String buktiUrl = '';
-        if (buktiPath.isNotEmpty) {
-          final response = Supabase.instance.client.storage
-              .from('bukti-pembayaran')
-              .getPublicUrl(buktiPath.replaceFirst('bukti-pembayaran/', ''));
-          buktiUrl = response;
-        }
-
-        tempRiwayat.add(
-          Tiket(
-            userId: e['user_id'],
-            nama: e['nama'],
-            tanggal: e['tanggal'],
-            jumlah: e['jumlah'],
-            total: e['total'],
-            buktiUrl: buktiUrl,
-            status: e['status'] ?? 'Menunggu Konfirmasi',
-          ),
-        );
-      }
-
-      setState(() {
-        _riwayat = tempRiwayat;
-        _isLoading = false;
-      });
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal memuat data: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _onNavTapped(int index) {
+  Future<void> ambilData() async {
+    final data = await _pemesananService.ambilPemesananUser(userId);
     setState(() {
-      _selectedIndex = index;
+      daftarPemesanan =
+          data
+              .map(
+                (item) => Tiket(
+                  userId: item['user_id'],
+                  nama: item['nama'],
+                  tanggal: item['tanggal'],
+                  jumlah: item['jumlah'],
+                  total: item['total'],
+                  buktiUrl: item['bukti_url'],
+                  status: item['status'],
+                ),
+              )
+              .toList();
     });
-
-    switch (index) {
-      case 0:
-        Get.offAll(() => const home.UserHomePage());
-        break;
-      case 1:
-        break;
-      case 2:
-        Get.offAll(() => const ProfilPage());
-        break;
-    }
   }
 
-  void _showDetailPopup(Tiket tiket) {
+  void showBuktiDialog(String buktiUrl) {
     showDialog(
       context: context,
       builder:
-          (_) => AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            title: const Text(
-              'Detail Pemesanan',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2563EB),
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Nama: ${tiket.nama}'),
-                Text('Tanggal Kunjungan: ${tiket.tanggal}'),
-                Text('Jumlah Tiket: ${tiket.jumlah}'),
-                Text('Status: ${tiket.status}'),
-                Text(
-                  'Total: Rp ${tiket.total}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 12),
-                if (tiket.buktiUrl.isNotEmpty)
-                  InkWell(
-                    onTap: () async {
-                      final url = Uri.parse(tiket.buktiUrl);
-                      if (await canLaunchUrl(url)) {
-                        if (!await launchUrl(
-                          url,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          await launchUrl(url, mode: LaunchMode.inAppWebView);
-                        }
-                      } else {
-                        Get.snackbar(
-                          'Gagal',
-                          'Tidak dapat membuka file.',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
-                      }
-                    },
-                    child: Row(
-                      children: const [
-                        Icon(
-                          Icons.picture_as_pdf_outlined,
-                          color: Color(0xFF2563EB),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Bukti Pembayaran',
-                          style: TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Color(0xFF2563EB),
-                          ),
-                        ),
-                      ],
-                    ),
+          (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxHeight: 300,
+                    maxWidth: 300,
                   ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Tutup'),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(buktiUrl, fit: BoxFit.contain),
+                  ),
+                ),
               ),
-            ],
+            ),
           ),
     );
   }
 
-  Widget buildRiwayatCard(Tiket tiket) {
-    Color statusColor;
-    switch (tiket.status) {
-      case 'Dikonfirmasi':
-        statusColor = Colors.green;
-        break;
-      case 'Ditolak':
-        statusColor = Colors.red;
-        break;
-      default:
-        statusColor = Colors.orange;
+  Widget statusWarna(String status) {
+    if (status.toLowerCase() == "dikonfirmasi") {
+      return const Text(
+        "Status: Dikonfirmasi",
+        style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+      );
+    } else {
+      return const Text(
+        "Status: Menunggu Konfirmasi",
+        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+      );
     }
-
-    return GestureDetector(
-      onTap: () => _showDetailPopup(tiket),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFF2563EB)),
-        ),
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tiket.nama,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Tanggal: ${tiket.tanggal}'),
-                    Text('Jumlah Tiket: ${tiket.jumlah}'),
-                    Text(
-                      'Status: ${tiket.status}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios, size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF2563EB);
-
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Riwayat Pemesanan',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        title: const Text("Riwayat Pemesanan"),
         centerTitle: true,
         backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.off(() => const home.UserHomePage()),
+        ),
       ),
-      body:
-          _isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: primaryColor),
-              )
-              : RefreshIndicator(
-                onRefresh: _loadRiwayat,
-                child:
-                    _riwayat.isEmpty
-                        ? ListView(
-                          children: const [
-                            SizedBox(height: 300),
-                            Center(
-                              child: Text(
-                                'Belum ada riwayat pemesanan.',
-                                style: TextStyle(color: Colors.black54),
-                              ),
-                            ),
-                          ],
-                        )
-                        : ListView(
-                          children: _riwayat.map(buildRiwayatCard).toList(),
+      body: ListView.builder(
+        itemCount: daftarPemesanan.length,
+        padding: const EdgeInsets.all(10),
+        itemBuilder: (context, index) {
+          final tiket = daftarPemesanan[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.blue.shade300),
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white,
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Kiri: Info Tiket
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tiket.nama,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
-              ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text("Tanggal: ${tiket.tanggal}"),
+                      Text("Jumlah Tiket: ${tiket.jumlah}"),
+                      Text("Total Bayar: Rp ${tiket.total}"),
+                      const SizedBox(height: 4),
+                      statusWarna(tiket.status),
+                    ],
+                  ),
+                ),
+                // Kanan: Tombol Bukti
+                if (tiket.buktiUrl.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.receipt_long_rounded,
+                      color: Colors.blue,
+                    ),
+                    tooltip: "Lihat Bukti",
+                    onPressed: () => showBuktiDialog(tiket.buktiUrl),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTapped,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
+        currentIndex: 1,
+        onTap: (index) {
+          if (index == 0) {
+            Get.off(() => const home.UserHomePage());
+          } else if (index == 2) {
+            Get.off(() => const ProfilPage());
+          }
+        },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: "Riwayat"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profil"),
         ],
       ),
     );
